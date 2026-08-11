@@ -1,0 +1,28 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  margin: 0;
+  font-family: 'Noto Sans Myanmar', 'Roboto', sans-serif;
+  background-color: #faf6f0;
+  background-image:
+    radial-gradient(ellipse 120% 80% at 50% -20%, rgba(196, 165, 116, 0.12), transparent 50%),
+    radial-gradient(ellipse 80% 50% at 100% 100%, rgba(196, 136, 138, 0.08), transparent 45%);
+  color: #2c2620;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+a {
+  color: inherit;
+}
