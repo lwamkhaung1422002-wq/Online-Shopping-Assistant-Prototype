@@ -27,7 +27,7 @@ export default function OrderPage() {
   }
 
   return (
-    <Box>
+    <Box sx={{ maxWidth: 900, mx: 'auto' }}>
       <Button
         startIcon={<ArrowBackIcon />}
         onClick={() => navigate(`/product/${product.id}`)}

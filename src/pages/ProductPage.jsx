@@ -17,69 +17,35 @@ export default function ProductPage() {
     return (
       <Box sx={{ textAlign: 'center', py: 4 }}>
         <Typography>Product မတွေ့ပါ</Typography>
-        <Button onClick={() => navigate('/')} sx={{ mt: 2 }}>
-          ပြန်သွားမည်
-        </Button>
+        <Button onClick={() => navigate('/')} sx={{ mt: 2 }}>ပြန်သွားမည်</Button>
       </Box>
     )
   }
 
   return (
-    <Box>
-      <Button
-        startIcon={<ArrowBackIcon />}
-        onClick={() => navigate('/')}
-        variant="text"
-        color="primary"
-        sx={{ mb: 2, pl: 0 }}
-      >
+    <Box sx={{ maxWidth: 1120, mx: 'auto' }}>
+      <Button startIcon={<ArrowBackIcon />} onClick={() => navigate('/')} variant="text" color="primary" sx={{ mb: { xs: 2, md: 3 }, pl: 0 }}>
         ပြန်သွားမည်
       </Button>
 
       {product.featured && (
-        <Box
-          sx={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: 0.5,
-            mb: 1,
-            px: 1.25,
-            py: 0.5,
-            borderRadius: 2,
-            bgcolor: brand.sandLight,
-            border: `1px solid ${brand.goldSoft}`,
-          }}
-        >
+        <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.5, mb: 1.5, px: 1.25, py: 0.5, borderRadius: 2, bgcolor: brand.sandLight, border: `1px solid ${brand.goldSoft}` }}>
           <WhatshotIcon sx={{ fontSize: 18, color: brand.gold }} />
-          <Typography variant="body2" fontWeight={600} sx={{ color: brand.plum }}>
-            ရေပန်းအစားဆုံး
-          </Typography>
+          <Typography variant="body2" fontWeight={600} sx={{ color: brand.plum }}>ရေပန်းအစားဆုံး</Typography>
         </Box>
       )}
 
-      <Typography variant="h1" gutterBottom>
-        {product.name}
-      </Typography>
-      <Typography variant="body2" color="text.secondary" sx={{ mb: 2.5 }}>
-        {product.description}
-      </Typography>
-
-      <AlbumGallery product={product} />
-
-      <Box sx={{ mt: 3 }}>
-        <SizeDescription productId={product.id} />
+      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'minmax(0, 1.3fr) minmax(320px, 0.7fr)' }, gap: { xs: 3, md: 5 }, alignItems: 'start' }}>
+        <AlbumGallery product={product} />
+        <Box sx={{ position: { md: 'sticky' }, top: { md: 104 } }}>
+          <Typography variant="h1" gutterBottom>{product.name}</Typography>
+          <Typography variant="body1" color="text.secondary" sx={{ mb: 3, lineHeight: 1.8 }}>{product.description}</Typography>
+          <SizeDescription productId={product.id} />
+          <Button variant="contained" fullWidth size="large" startIcon={<ShoppingBagIcon />} onClick={() => navigate(`/product/${product.id}/order`)} sx={{ mt: 1.5, minHeight: 52 }}>
+            Order တင်မည်
+          </Button>
+        </Box>
       </Box>
-
-      <Button
-        variant="contained"
-        fullWidth
-        size="large"
-        startIcon={<ShoppingBagIcon />}
-        onClick={() => navigate(`/product/${product.id}/order`)}
-        sx={{ mt: 1 }}
-      >
-        Order တင်မည်
-      </Button>
     </Box>
   )
 }

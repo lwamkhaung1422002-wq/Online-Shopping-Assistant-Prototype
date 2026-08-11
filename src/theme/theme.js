@@ -4,19 +4,19 @@ import { brand } from './palette.js'
 const theme = createTheme({
   palette: {
     mode: 'light',
-    primary: { main: brand.charcoal, light: brand.plum, dark: '#1E1A24', contrastText: brand.cream },
-    secondary: { main: brand.roseDeep, light: brand.rose, dark: '#8A5558', contrastText: brand.cream },
+    primary: { main: brand.charcoal, light: brand.plum, dark: '#171019', contrastText: brand.cream },
+    secondary: { main: brand.roseDeep, light: brand.rose, dark: '#7E2C43', contrastText: brand.cream },
     background: { default: brand.ivory, paper: brand.cream },
     text: { primary: brand.text, secondary: brand.textMuted },
     divider: brand.sand,
-    success: { main: brand.gold },
+    success: { main: '#5C836D' },
   },
   typography: {
     fontFamily: '"Noto Sans Myanmar", "Roboto", sans-serif',
     fontSize: 16,
     h1: {
       fontFamily: '"Cormorant Garamond", Georgia, serif',
-      fontSize: '1.75rem',
+      fontSize: 'clamp(2rem, 3vw, 3.25rem)',
       fontWeight: 600,
       letterSpacing: '0.02em',
       color: brand.text,
@@ -29,7 +29,7 @@ const theme = createTheme({
     },
     h3: {
       fontFamily: '"Cormorant Garamond", Georgia, serif',
-      fontSize: '1.2rem',
+      fontSize: '1.35rem',
       fontWeight: 600,
     },
     body1: { fontSize: '1rem', lineHeight: 1.65 },
@@ -54,10 +54,10 @@ const theme = createTheme({
           '&:hover': { boxShadow: '0 4px 14px rgba(42, 36, 50, 0.12)' },
         },
         contained: {
-          background: `linear-gradient(135deg, ${brand.charcoal} 0%, ${brand.plum} 100%)`,
+          background: `linear-gradient(110deg, ${brand.charcoal} 0%, ${brand.plum} 55%, #6B304F 100%)`,
           color: brand.cream,
           '&:hover': {
-            background: `linear-gradient(135deg, ${brand.plum} 0%, ${brand.roseDeep} 100%)`,
+            background: `linear-gradient(110deg, ${brand.plum} 0%, ${brand.roseDeep} 100%)`,
           },
         },
         outlined: {
@@ -78,11 +78,17 @@ const theme = createTheme({
     MuiCard: {
       styleOverrides: {
         root: {
-          boxShadow: '0 4px 20px rgba(42, 36, 50, 0.06)',
+          boxShadow: '0 10px 30px rgba(68, 37, 63, 0.1)',
           border: `1px solid ${brand.sand}`,
           borderRadius: 16,
           overflow: 'hidden',
           backgroundColor: brand.cream,
+          transition: 'transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease',
+          '&:hover': {
+            transform: 'translateY(-4px)',
+            boxShadow: '0 18px 42px rgba(68, 37, 63, 0.16)',
+            borderColor: brand.goldSoft,
+          },
         },
       },
     },

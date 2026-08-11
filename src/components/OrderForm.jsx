@@ -109,13 +109,26 @@ export default function OrderForm({ product, onSuccess }) {
   }
 
   return (
-    <Box component="form" onSubmit={handleSubmit(onSubmit)}>
+    <Box
+      component="form"
+      onSubmit={handleSubmit(onSubmit)}
+      sx={{
+        maxWidth: 760,
+        mx: 'auto',
+        p: { xs: 2, sm: 3.5, md: 4 },
+        border: '1px solid',
+        borderColor: 'divider',
+        borderRadius: { xs: 3, md: 4 },
+        bgcolor: 'background.paper',
+        boxShadow: '0 14px 40px rgba(42, 36, 50, 0.08)',
+      }}
+    >
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
         <ShoppingBagIcon fontSize="small" />
         <Typography variant="h3">Order Form</Typography>
       </Box>
 
-      <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+      <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
         {product.name}
       </Typography>
 

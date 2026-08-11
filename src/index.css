@@ -12,15 +12,27 @@ html {
 body {
   margin: 0;
   font-family: 'Noto Sans Myanmar', 'Roboto', sans-serif;
-  background-color: #faf6f0;
+  background-color: #fcf7f5;
   background-image:
-    radial-gradient(ellipse 120% 80% at 50% -20%, rgba(196, 165, 116, 0.12), transparent 50%),
-    radial-gradient(ellipse 80% 50% at 100% 100%, rgba(196, 136, 138, 0.08), transparent 45%);
-  color: #2c2620;
+    radial-gradient(ellipse 120% 80% at 50% -20%, rgba(213, 162, 76, 0.16), transparent 50%),
+    radial-gradient(ellipse 80% 50% at 100% 100%, rgba(211, 118, 135, 0.12), transparent 45%);
+  color: #2a1b23;
 }
 
 #root {
   min-height: 100vh;
+}
+
+::selection {
+  background: rgba(211, 118, 135, 0.3);
+}
+
+@media (max-width: 599px) {
+  body {
+    background-image:
+      radial-gradient(ellipse 125% 46% at 50% -10%, rgba(213, 162, 76, 0.17), transparent 55%),
+      radial-gradient(ellipse 100% 35% at 100% 100%, rgba(211, 118, 135, 0.1), transparent 58%);
+  }
 }
 
 a {

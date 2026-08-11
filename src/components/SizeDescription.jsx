@@ -102,7 +102,7 @@ export default function SizeDescription({ productId }) {
   if (!config) return null
 
   return (
-    <Box sx={{ mb: 3 }}>
+    <Box sx={{ mb: 3, p: { xs: 0, sm: 2.25 }, borderRadius: 3, bgcolor: { sm: brand.cream }, border: { sm: `1px solid ${brand.sand}` } }}>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
         <StraightenIcon fontSize="small" />
         <Typography variant="h3">Size Guide</Typography>

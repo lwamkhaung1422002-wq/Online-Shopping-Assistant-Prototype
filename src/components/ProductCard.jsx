@@ -3,16 +3,19 @@ import WhatshotIcon from '@mui/icons-material/Whatshot'
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward'
 import { Link as RouterLink } from 'react-router'
 import { brand } from '../theme/palette.js'
+import { getProductImages } from '../config/productImages.js'
 
 export default function ProductCard({ product }) {
-  const firstImage = product.album[0]
+  const productImages = getProductImages(product.id)
+  const firstImage = productImages?.[0] ?? product.album[0]
+  const colors = productImages ? [...new Set(productImages.map((item) => item.color))].join(' · ') : null
 
   return (
-    <Card sx={{ mb: 2.5 }}>
+    <Card sx={{ height: '100%', mb: 0 }}>
       <CardActionArea component={RouterLink} to={`/product/${product.id}`}>
         <Box
           sx={{
-            height: 220,
+            height: { xs: 220, sm: 250, lg: 270 },
             background: firstImage?.gradient ?? brand.sand,
             display: 'flex',
             alignItems: 'center',
@@ -26,18 +29,28 @@ export default function ProductCard({ product }) {
             },
           }}
         >
-          <Typography
-            variant="body2"
-            sx={{
-              color: 'rgba(255,252,247,0.85)',
-              fontSize: '0.7rem',
-              letterSpacing: '0.2em',
-              textTransform: 'uppercase',
-              zIndex: 1,
-            }}
-          >
-            Preview
-          </Typography>
+          {firstImage?.src && (
+            <Box
+              component="img"
+              src={firstImage.src}
+              alt={`${product.name} — ${firstImage.color}`}
+              sx={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }}
+            />
+          )}
+          {!firstImage?.src && (
+            <Typography
+              variant="body2"
+              sx={{
+                color: 'rgba(255,252,247,0.85)',
+                fontSize: '0.7rem',
+                letterSpacing: '0.2em',
+                textTransform: 'uppercase',
+                zIndex: 1,
+              }}
+            >
+              Preview
+            </Typography>
+          )}
           {product.featured && (
             <Chip
               icon={<WhatshotIcon sx={{ fontSize: '16px !important' }} />}
@@ -57,7 +70,7 @@ export default function ProductCard({ product }) {
             />
           )}
         </Box>
-        <CardContent sx={{ py: 2, px: 2.25 }}>
+        <CardContent sx={{ py: 2.25, px: 2.5 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1 }}>
             <Typography variant="h3" sx={{ mb: 0.5 }}>
               {product.name}
@@ -67,6 +80,11 @@ export default function ProductCard({ product }) {
           <Typography variant="body2" color="text.secondary" sx={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
             {product.description}
           </Typography>
+          {colors && (
+            <Typography variant="caption" sx={{ display: 'block', mt: 1.25, color: brand.roseDeep, fontWeight: 700, letterSpacing: '0.04em' }}>
+              Colors: {colors}
+            </Typography>
+          )}
         </CardContent>
       </CardActionArea>
     </Card>

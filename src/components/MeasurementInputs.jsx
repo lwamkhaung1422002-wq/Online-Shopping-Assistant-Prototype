@@ -9,27 +9,27 @@ export default function MeasurementInputs({ register, errors, showMeasurements, 
           <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
             ရင်ခါးတင် သုံးမျိုးလုံး မသိရင် ဖြည့်ထားသလောက်နဲ့ suggestion ပေးပါမယ်
           </Typography>
-          <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 1.5, mb: 2 }}>
+          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr 1fr' }, gap: 1.5, mb: 2 }}>
             <TextField
               label="ရင်"
               type="number"
               size="small"
               {...register('bust')}
-              inputProps={{ min: 0 }}
+              slotProps={{ htmlInput: { min: 0 } }}
             />
             <TextField
               label="ခါး"
               type="number"
               size="small"
               {...register('waist')}
-              inputProps={{ min: 0 }}
+              slotProps={{ htmlInput: { min: 0 } }}
             />
             <TextField
               label="တင်"
               type="number"
               size="small"
               {...register('hip')}
-              inputProps={{ min: 0 }}
+              slotProps={{ htmlInput: { min: 0 } }}
             />
           </Box>
         </>
@@ -50,7 +50,7 @@ export default function MeasurementInputs({ register, errors, showMeasurements, 
         error={!!errors.weight || !!weightError}
         helperText={errors.weight?.message || weightError}
         {...register('weight', { required: 'ကိုယ်အလေးချိန် ထည့်ပါ' })}
-        inputProps={{ min: 0 }}
+        slotProps={{ htmlInput: { min: 0 } }}
       />
     </Box>
   )

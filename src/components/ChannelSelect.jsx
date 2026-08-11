@@ -30,9 +30,15 @@ export default function ChannelSelect({ selected, onSelect }) {
           return (
             <Paper
               key={id}
+              component="button"
+              type="button"
+              aria-pressed={isSelected}
               variant="outlined"
               sx={{
                 p: 2,
+                width: '100%',
+                textAlign: 'left',
+                font: 'inherit',
                 cursor: 'pointer',
                 opacity: info.inactive ? 0.72 : 1,
                 borderColor: isSelected ? brand.roseDeep : brand.sand,

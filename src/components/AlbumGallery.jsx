@@ -1,13 +1,17 @@
 import { Box, Typography } from '@mui/material'
 import { brand } from '../theme/palette.js'
+import { getProductImages } from '../config/productImages.js'
 
 export default function AlbumGallery({ product }) {
+  const album = getProductImages(product.id) ?? product.album
+
   return (
     <Box
       sx={{
-        display: 'flex',
+        display: { xs: 'flex', md: 'grid' },
+        gridTemplateColumns: { md: 'repeat(2, minmax(0, 1fr))' },
         gap: 1.5,
-        overflowX: 'auto',
+        overflowX: { xs: 'auto', md: 'visible' },
         pb: 1,
         mx: -0.5,
         px: 0.5,
@@ -15,12 +19,12 @@ export default function AlbumGallery({ product }) {
         '&::-webkit-scrollbar': { display: 'none' },
       }}
     >
-      {product.album.map((item) => (
+      {album.map((item) => (
         <Box
           key={item.id}
           sx={{
-            minWidth: 268,
-            height: 340,
+            minWidth: { xs: 268, md: 0 },
+            height: { xs: 340, md: 360 },
             borderRadius: 3,
             background: item.gradient,
             border: `1px solid ${brand.sand}`,
@@ -42,14 +46,22 @@ export default function AlbumGallery({ product }) {
             },
           }}
         >
+          {item.src && (
+            <Box
+              component="img"
+              src={item.src}
+              alt={`${product.name} — ${item.color}`}
+              sx={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }}
+            />
+          )}
           <Typography
             variant="h3"
             sx={{ color: brand.cream, fontWeight: 600, mb: 0.25, zIndex: 1, textShadow: '0 2px 12px rgba(0,0,0,0.3)' }}
           >
-            {product.name}
+            {item.color ?? product.name}
           </Typography>
           <Typography variant="body2" sx={{ color: brand.goldSoft, zIndex: 1, letterSpacing: '0.15em', fontSize: '0.75rem' }}>
-            LOOK {item.id}
+            {item.color ? product.name : `LOOK ${item.id}`}
           </Typography>
         </Box>
       ))}
