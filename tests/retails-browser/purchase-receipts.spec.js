@@ -1,0 +1,29 @@
+import {test,expect} from '@playwright/test'
+import {createRequire} from 'node:module'
+import {randomUUID} from 'node:crypto'
+
+test('retained desktop/mobile Product Details and cost history read actual partial/final Purchase Receive HTTP results with original receipt costs',async({page,request})=>{
+  test.setTimeout(180000)
+  if(process.env.FIRESTORE_EMULATOR_HOST&&process.env.FIRESTORE_EMULATOR_HOST!=='127.0.0.1:8080')throw Error('Purchase browser fixtures require the loopback demo emulator.')
+  process.env.FIRESTORE_EMULATOR_HOST='127.0.0.1:8080'
+  const require=createRequire(new URL('../../../BelleLocal POS app/functions/package.json',import.meta.url)),{initializeApp}=require('firebase-admin/app'),{getFirestore}=require('firebase-admin/firestore'),db=getFirestore(initializeApp({projectId:'demo-belle-online'},'purchase-receipt-browser-'+randomUUID())),api='http://127.0.0.1:5001/demo-belle-online/asia-southeast1/onlineShopApi/belle-online/admin/pos/'
+  const login=await request.post('http://127.0.0.1:9099/identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=demo-key',{data:{email:'owner@belle-demo.example',password:'Local-test-only-123!',returnSecureToken:true}});expect(login.status()).toBe(200)
+  const headers={Authorization:'Bearer '+(await login.json()).idToken},suffix=randomUUID().slice(0,8),name='Purchase received '+suffix,supplierId=randomUUID()
+  // Source Add Supplier creates an unlinked invoice. Only the existing linked
+  // identity is fixture input; product/order/send/receipts are real HTTP writes.
+  await db.doc(`onlineShopV2/belle-online/pos_suppliers/${supplierId}`).set({id:supplierId,shopId:'belle-online',name:'Receipt supplier '+suffix,isActive:true,createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()})
+  const created=await request.post(api+'products',{headers:{...headers,'Idempotency-Key':randomUUID()},data:{name,sku:'RECEIVE-'+suffix,cost:1000,price:5000,units:[{name:'Piece',isBase:true,conversionFactor:1}]}});expect(created.status()).toBe(201);const product=(await created.json()).product
+  const ordered=await request.post(api+'purchases',{headers:{...headers,'Idempotency-Key':randomUUID()},data:{supplierId,deliveryCost:100,items:[{productId:product.id,quantity:3,unitCost:2000}]}});expect(ordered.status()).toBe(201);const purchase=(await ordered.json()).purchase
+  const send=await request.post(api+'purchases/'+purchase.id+'/send',{headers,data:{}});expect(send.status()).toBe(200)
+  const receiveKey=randomUUID(),path=api+'purchases/'+purchase.id+'/receive',first=await request.post(path,{headers:{...headers,'Idempotency-Key':receiveKey},data:{items:[{purchaseItemId:purchase.items[0].id,quantity:1,actualUnitCost:3000}],confirmPriceChanges:true,note:'Original received cost'}});expect(first.status()).toBe(200);const partial=(await first.json()).purchase;expect(partial.status).toBe('partially_received');expect(partial.total).toBe(9100);expect(partial.receipts[0].inventoryBatch.unitCost).toBe(2000)
+  const final=await request.post(path,{headers:{...headers,'Idempotency-Key':randomUUID()},data:{items:[{purchaseItemId:purchase.items[0].id,quantity:2}]}});expect(final.status()).toBe(200);const saved=(await final.json()).purchase;expect(saved.status).toBe('received');expect(saved.receipts).toHaveLength(2);expect(saved.items[0].receivedBaseQuantity).toBe('3');expect(saved.items[0].plannedUnitCost).toBe(2000)
+  const retry=await request.post(path,{headers:{...headers,'Idempotency-Key':receiveKey},data:{items:[{purchaseItemId:purchase.items[0].id,quantity:999}]}});expect(retry.status()).toBe(200);const replay=await retry.json();expect(replay.duplicate).toBe(true);expect(replay.purchase.receipts).toEqual(saved.receipts)
+  const detail=await request.get(api+'products/'+product.id,{headers});expect(detail.status()).toBe(200);const details=(await detail.json()).product;expect(details.currentStock).toBe(3);expect(details.availableStock).toBe(3);expect(details.cost).toBe(2667)
+  const history=await request.get(api+'products/'+product.id+'/cost-history',{headers});expect(history.status()).toBe(200);expect((await history.json()).history.map(row=>row.unitCost).sort()).toEqual([2000,3000])
+  const errors=[];page.on('pageerror',error=>errors.push(error.message));await page.setViewportSize({width:1365,height:950});await page.goto('http://127.0.0.1:5176/#/stock/'+product.id)
+  await expect(page.getByText('Local demo preview',{exact:true})).toBeVisible({timeout:20000});await page.getByRole('button',{name:'Use demo account',exact:true}).click();await page.getByRole('button',{name:'Sign in',exact:true}).click()
+  await expect(page.getByText(name,{exact:true}).first()).toBeVisible({timeout:40000});await expect(page.getByText('3 Piece',{exact:true}).first()).toBeVisible();expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBeTruthy()
+  await page.getByRole('button',{name:'View cost price history',exact:true}).click();const dialog=page.getByRole('dialog');await expect(dialog.getByText('Purchase Receipt',{exact:true})).toHaveCount(2,{timeout:20000});await page.screenshot({path:'docs/screenshots/retails-purchase-receipt-cost-desktop.png',fullPage:true})
+  await page.setViewportSize({width:390,height:844});await page.reload();await expect(page.getByText(name,{exact:true}).first()).toBeVisible({timeout:40000});await expect(page.getByText('3 Piece',{exact:true})).toBeVisible()
+  await page.getByRole('button',{name:'View cost price history',exact:true}).click();await expect(page.getByRole('dialog').getByText('Purchase Receipt',{exact:true})).toHaveCount(2,{timeout:20000});expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBeTruthy();await page.screenshot({path:'docs/screenshots/retails-purchase-receipt-cost-mobile.png',fullPage:true});expect(errors).toEqual([])
+})

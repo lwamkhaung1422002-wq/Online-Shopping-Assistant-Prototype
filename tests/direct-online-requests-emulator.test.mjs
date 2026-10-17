@@ -1,0 +1,150 @@
+import test from 'node:test'
+import assert from 'node:assert/strict'
+import { createRequire } from 'node:module'
+import { readFile } from 'node:fs/promises'
+import { createHash } from 'node:crypto'
+import { createDirectOnlineClient } from '../../BelleLocal POS app/src/features/firebase-direct/online-client.js'
+import { createDirectReservationRepository } from '../../BelleLocal POS app/src/features/firebase-direct/reservation-repository.js'
+import { directStockScope } from '../../BelleLocal POS app/src/features/firebase-direct/availability-model.js'
+import { MAIN_OWNER_UID } from '../../BelleLocal POS app/src/features/firebase-direct/content-model.js'
+import { digest } from '../../BelleLocal POS app/src/shared/pos-domain/mutation.js'
+import { createDirectTracking } from '../dashboard/shared/direct-tracking.js'
+const require = createRequire(new URL('../../BelleLocal POS app/package.json',import.meta.url)), sdk = require('firebase/firestore')
+const { initializeTestEnvironment,assertFails } = require('@firebase/rules-unit-testing')
+if (process.env.DIRECT_FIRESTORE_EMULATOR !== '127.0.0.1:8088') throw Error('Use the isolated direct emulator.')
+const env = await initializeTestEnvironment({ projectId:'demo-belle-direct-online-requests',firestore:{host:'127.0.0.1',port:8088,rules:await readFile(new URL('../../BelleLocal POS app/config/firebase/firestore.direct.rules',import.meta.url),'utf8')} })
+test.after(() => env.cleanup())
+const root = 'onlineShopV2/belle-online', owner = () => env.authenticatedContext(MAIN_OWNER_UID).firestore()
+const ref = (db,table,key) => sdk.doc(db,`${root}/${table}/${key}`), auth = { currentUser:{uid:MAIN_OWNER_UID} }
+const call = db => createDirectOnlineClient({db,auth,sdk}), token = 'a'.repeat(64), reference = `OS-${'B'.repeat(32)}`, scope = await directStockScope('pos','v')
+async function fixture({enabled=true,expired=false,ledger=true,lines=1} = {}) {
+  const choices=Array.from({length:lines},(_,index)=>lines === 1 ? 'choice' : `choice-${index}`)
+  await env.clearFirestore()
+  await env.withSecurityRulesDisabled(async context => {
+    const db = context.firestore(), batch = sdk.writeBatch(db)
+    batch.set(ref(db,'direct_runtime','main'),{stock_authority:'ledger-v2',online_orders_enabled:enabled,backend_writers_stopped:true,original_writers_stopped:true})
+    batch.set(ref(db,'pos_settings','main'),{ledgerEnabled:ledger})
+    batch.set(ref(db,'pos_products','pos'),{id:'pos',trackingMode:'NONE',variants:[{id:'v',price:34500}]})
+    batch.set(ref(db,'stock_balances',scope),{productId:'pos',variantId:'v',onHand:String(lines*2),reserved:'0',version:1})
+    batch.set(ref(db,'stock_batches','batch'),{id:'batch',productId:'pos',variantId:'v',scopeKey:scope,baseQuantity:String(lines*2),quantity:lines*2,reservedBaseQuantity:'0',reservedQuantity:0,physicalBaseQuantity:String(lines*2),heldBaseQuantity:'0',consumedBaseQuantity:'0',unitCost:12000,receivedAt:'2026-07-23'})
+    for (const id of choices) batch.set(ref(db,'stock_bindings',id),{id,public_variant_id:id,public_product_id:'post',pos_product_id:'pos',pos_variant_id:'v',scope_key:scope})
+    batch.set(ref(db,'products','post'),{id:'post',status:'published',variants:choices.map(id=>({id,active:true}))})
+    batch.set(sdk.doc(db,`users/${MAIN_OWNER_UID}/orders/original`),{total:34500,paymentStatus:'unpaid'})
+    await batch.commit()
+  })
+  const db = owner(), hold = await createDirectReservationRepository({db,auth,sdk}).reservation({productId:'pos',variantId:'v',sourceType:'OnlineOrder',sourceId:'request',quantity:String(lines)},'hold-request')
+  const created = new Date(Date.now()-3600000).toISOString()
+  await env.withSecurityRulesDisabled(async context => {
+    await sdk.setDoc(ref(context.firestore(),'orders','request'),{id:'request',shop_id:'belle-online',reference,tracking_hash:createHash('sha256').update(token).digest('hex'),request_hash:'f'.repeat(64),status:'pending',customer_name:'Private buyer',phone:'09999999999',city:'Yangon',address:'Private address',note:'Private note',
+      items:choices.map((id,index)=>({id:lines===1?'item':`item-${index}`,variant_id:id,product_id:'post',product_name:'Elegence',color:'Brown',size:'Size 1',quantity:1,unit_price:34500,measurements:{},stock_scope_key:scope})),subtotal:34500*lines,delivery_fee:0,total:34500*lines,created_at:created,expires_at:new Date(Date.now()+(expired?-10000:3600000)).toISOString(),events:[{id:'initial',status:'pending',note:'Private note',created_at:created}],reservation_state:'reserved',stock_reservations:[hold],ledger_variant_ids:choices})
+  })
+  return db
+}
+test('SDK owner accept makes one exact draft and private token projection; Rules reject price edits, guest private access and tracking enumeration',async () => {
+  const db = await fixture(), online = call(db), original = (await sdk.getDoc(sdk.doc(db,`users/${MAIN_OWNER_UID}/orders/original`))).data()
+  assert.equal((await online('admin/records/orders')).length,1)
+  assert.deepEqual(await online('admin/orders/request/transition',{status:'confirmed',note:'Private owner note'}),{saved:true,changed:true})
+  assert.deepEqual(await online('admin/orders/request/transition',{status:'confirmed'}),{saved:true,changed:false})
+  const order = (await sdk.getDoc(ref(db,'orders','request'))).data()
+  assert.deepEqual(order.invoice_draft.items,order.items); assert.equal(order.invoice_draft.total,34500); assert.equal(order.events.length,2)
+  const guest = env.unauthenticatedContext().firestore(), tracking = createDirectTracking({db:guest,sdk})
+  const publicValue = await tracking(reference,token)
+  assert.equal(publicValue.status,'confirmed'); assert.equal(publicValue.items[0].name,'Elegence')
+  const text = JSON.stringify(publicValue)
+  for (const privateValue of ['Private buyer','09999999999','Private address','Private note','Private owner note','unitCost','stock_reservations']) assert.equal(text.includes(privateValue),false)
+  await assert.rejects(tracking(reference,'c'.repeat(64)),{status:404})
+  await assertFails(sdk.getDoc(ref(guest,'orders','request')))
+  await assertFails(sdk.getDocs(sdk.collection(guest,`${root}/public_tracking`)))
+  await assertFails(sdk.getDocs(sdk.collectionGroup(guest,'items')))
+  const batch = sdk.writeBatch(db), version = (await sdk.getDoc(ref(db,'direct_stock_meta','main'))).data().version
+  batch.update(ref(db,'orders','request'),{total:1})
+  batch.set(ref(db,'direct_stock_meta','main'),{version:version+1})
+  await assertFails(batch.commit())
+  const key = digest([reference,createHash('sha256').update(token).digest('hex')]), child=sdk.doc(db,`${root}/public_tracking/${key}/items/0`), privateProjection = (await sdk.getDoc(child)).data()
+  privateProjection.unitCost=12000
+  const unsafe = sdk.writeBatch(db)
+  unsafe.set(child,privateProjection)
+  unsafe.set(ref(db,'direct_stock_meta','main'),{version:version+1})
+  await assertFails(unsafe.commit())
+  assert.deepEqual((await sdk.getDoc(sdk.doc(db,`users/${MAIN_OWNER_UID}/orders/original`))).data(),original)
+})
+test('SDK reject releases the saved allocation once atomically with public availability/tracking; retry leaves stock/events unchanged',async () => {
+  const db = await fixture({ledger:false}), online = call(db)
+  await online('admin/orders/request/transition',{status:'rejected',note:'Unavailable delivery'})
+  assert.deepEqual(await online('admin/orders/request/transition',{status:'rejected'}),{saved:true,changed:false})
+  const balance = (await sdk.getDoc(ref(db,'stock_balances',scope))).data()
+  assert.equal(balance.onHand,'2'); assert.equal(balance.reserved,'0')
+  assert.equal(balance.sourceLedger.reserved,'0')
+  assert.equal((await sdk.getDoc(ref(db,'public_stock','choice'))).data().available,2)
+  const order = (await sdk.getDoc(ref(db,'orders','request'))).data()
+  assert.equal(order.reservation_state,'released'); assert.equal(order.events.length,2)
+  assert.equal((await sdk.getDocs(sdk.collection(db,`${root}/inventory_movements`))).size,1)
+  assert.equal((await createDirectTracking({db:env.unauthenticatedContext().firestore(),sdk})(reference,token)).status,'rejected')
+  assert.equal((await sdk.getDoc(ref(db,'stock_reservations',order.stock_reservations[0].id))).data().status,'RELEASED')
+  const originalBatch = (await sdk.getDoc(ref(db,'stock_batches','batch'))).data()
+  assert.equal(originalBatch.unitCost,12000); assert.equal(originalBatch.scopeKey,scope); assert.equal(originalBatch.productId,'pos')
+})
+test('SDK expiry rejects late acceptance and safely releases only still-pending expired requests, with disabled writes retaining readable list',async () => {
+  let db = await fixture({expired:true}), online = call(db)
+  await assert.rejects(online('admin/orders/request/transition',{status:'confirmed'}),{status:409})
+  assert.deepEqual(await online('admin/orders/expire',{}),{expired:1,failed:[]})
+  assert.deepEqual(await online('admin/orders/expire',{}),{expired:0,failed:[]})
+  assert.equal((await sdk.getDoc(ref(db,'stock_balances',scope))).data().reserved,'0')
+  db = await fixture({enabled:false}); online = call(db)
+  assert.equal((await online('admin/records/orders')).length,1)
+  await assert.rejects(online('admin/orders/request/transition',{status:'confirmed'}),{status:409})
+})
+test('frozen allocation tampering rolls back stock/status/tracking; accept versus cancellation composes existing holds under contention',async () => {
+  let db = await fixture(), online = call(db)
+  await env.withSecurityRulesDisabled(async context => {
+    const target = ref(context.firestore(),'orders','request'), value = (await sdk.getDoc(target)).data()
+    value.stock_reservations[0].allocations[0].unitCost=1
+    await sdk.setDoc(target,value)
+  })
+  await assert.rejects(online('admin/orders/request/transition',{status:'rejected'}),{status:409})
+  assert.equal((await sdk.getDoc(ref(db,'orders','request'))).data().status,'pending')
+  assert.equal((await sdk.getDoc(ref(db,'stock_balances',scope))).data().reserved,'1')
+  assert.equal((await sdk.getDocs(sdk.collection(db,`${root}/public_tracking`))).size,0)
+  db = await fixture(); online = call(db)
+  const outcomes = await Promise.allSettled([online('admin/orders/request/transition',{status:'confirmed'}),online('admin/orders/request/transition',{status:'cancelled'})])
+  assert.equal(outcomes[1].status,'fulfilled',JSON.stringify(outcomes.map(row=>row.reason?.message || 'saved')))
+  assert.equal((await sdk.getDoc(ref(db,'orders','request'))).data().status,'cancelled')
+  assert.equal((await sdk.getDoc(ref(db,'stock_balances',scope))).data().reserved,'0')
+  assert.equal((await sdk.getDocs(sdk.collection(db,`${root}/inventory_movements`))).size,1)
+  assert.equal((await sdk.getDoc(ref(db,'public_tracking',digest([reference,createHash('sha256').update(token).digest('hex')])))).data().status,'cancelled')
+})
+test('opening/refresh releases expiry only in active owner mode; linked completed POS delivery projects its public lifecycle without another stock deduction',async () => {
+  let db = await fixture({expired:true}), online=call(db)
+  const rows=await online('admin/records/orders')
+  assert.equal(rows[0].status,'expired')
+  assert.equal((await sdk.getDoc(ref(db,'stock_balances',scope))).data().reserved,'0')
+  db=await fixture(); online=call(db)
+  await env.withSecurityRulesDisabled(async context => {
+    const db=context.firestore(), batch=sdk.writeBatch(db), date=new Date().toISOString()
+    batch.update(ref(db,'orders','request'),{status:'confirmed',reservation_state:'transferred',pos_order_id:'invoice',pos_order_number:'00001'})
+    batch.set(ref(db,'pos_orders','invoice'),{id:'invoice',onlineOrderId:'request',total:34500,fulfillmentStatus:'completed',paymentStatus:'paid'})
+    batch.set(ref(db,'pos_order_operations','operation'),{id:'operation',orderId:'invoice',status:'COMPLETED',startedAt:date,completedAt:date})
+    batch.set(ref(db,'pos_delivery_memberships','invoice'),{handoverId:'handover'})
+    batch.set(ref(db,'pos_delivery_handovers','handover'),{receiverName:'Delivery service',deliveryNumber:'D-1'})
+    await batch.commit()
+  })
+  const linked=await online('admin/records/orders')
+  assert.equal(linked[0].status,'shipped'); assert.equal(linked[0].pos_payment_status,'paid')
+  await online('admin/orders/request/transition',{status:'delivered'})
+  const value=await createDirectTracking({db:env.unauthenticatedContext().firestore(),sdk})(reference,token)
+  assert.equal(value.status,'delivered'); assert.equal(value.courier,'Delivery service'); assert.equal(value.delivery_reference,'D-1')
+  assert.deepEqual(value.events.map(row=>row.status).sort(),['delivered','packing','pending','shipped'])
+  assert.equal((await sdk.getDoc(ref(db,'stock_balances',scope))).data().reserved,'1')
+  assert.equal((await sdk.getDocs(sdk.collection(db,`${root}/inventory_movements`))).size,0)
+})
+test('retained forty-line alias cart projects safely and cancels one aggregate frozen hold without reducing its supported line count',async () => {
+  const db=await fixture({lines:40}), online=call(db)
+  await online('admin/orders/request/transition',{status:'confirmed'})
+  const tracking=createDirectTracking({db:env.unauthenticatedContext().firestore(),sdk})
+  assert.equal((await tracking(reference,token)).items.length,40)
+  await online('admin/orders/request/transition',{status:'cancelled'})
+  assert.equal((await sdk.getDoc(ref(db,'stock_balances',scope))).data().reserved,'0')
+  assert.equal((await sdk.getDoc(ref(db,'stock_balances',scope))).data().onHand,'80')
+  assert.equal((await tracking(reference,token)).status,'cancelled')
+  assert.equal((await sdk.getDocs(sdk.collection(db,`${root}/inventory_movements`))).size,40)
+})
