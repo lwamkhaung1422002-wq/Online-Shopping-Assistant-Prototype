@@ -6,6 +6,9 @@
   "compatibility_date": "2026-10-17",
   "workers_dev": true,
   "preview_urls": false,
+  "ratelimits": [
+    { "name": "PUBLIC_REQUEST_LIMITER", "namespace_id": "2026101801", "simple": { "limit": 120, "period": 60 } }
+  ],
   "observability": {
     "enabled": true,
     "logs": {
@@ -34,6 +37,9 @@
     "staging": {
       "name": "belle-local-dashboard-staging",
       "workers_dev": true,
+      "ratelimits": [
+        { "name": "PUBLIC_REQUEST_LIMITER", "namespace_id": "2026101802", "simple": { "limit": 120, "period": 60 } }
+      ],
       "vars": {
         "API_ORIGIN": "https://replace-with-staging-api.invalid"
       }

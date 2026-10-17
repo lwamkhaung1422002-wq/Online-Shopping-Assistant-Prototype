@@ -4,7 +4,7 @@ import worker from './worker.js'
 
 const originalFetch = globalThis.fetch
 afterEach(() => { globalThis.fetch = originalFetch })
-const env = { API_ORIGIN: 'https://api.example.com', API_PROXY_SECRET: 'isolated-test-secret-more-than-32-characters', ASSETS: { fetch: async () => new Response('SPA') } }
+const env = { API_ORIGIN: 'https://api.example.com', API_PROXY_SECRET: 'isolated-test-secret-more-than-32-characters', ASSETS: { fetch: async () => new Response('SPA') }, PUBLIC_REQUEST_LIMITER: { limit: async () => ({ success: true }) } }
 const headers = { 'CF-Connecting-IP': '198.51.100.9' }
 const request = (path, options = {}) => new Request(`https://shop.example.com${path}`, { headers, ...options })
 
@@ -48,4 +48,17 @@ test('missing secrets/identity, invalid origins, redirects and network errors fa
   const result = await worker.fetch(req, env)
   assert.equal(result.status, 502)
   assert.ok(!(await result.text()).includes('private detail'))
+})
+
+test('public POST bursts stop before upstream and use trusted IP plus route as the bucket', async () => {
+  let key
+  globalThis.fetch = () => { throw new Error('Must not forward a rejected request') }
+  const req = request('/api/public/shops/shop/checkout', { method: 'POST', body: '{}' })
+  const result = await worker.fetch(req, { ...env, PUBLIC_REQUEST_LIMITER: { limit: async input => { key = input.key; return { success: false } } } })
+  assert.equal(result.status, 429)
+  assert.equal(result.headers.get('Retry-After'), '60')
+  assert.equal(result.headers.get('Cache-Control'), 'no-store')
+  assert.equal(key, '/public/shops/shop/checkout:198.51.100.9')
+  assert.equal((await worker.fetch(req, { ...env, PUBLIC_REQUEST_LIMITER: undefined })).status, 503)
+  assert.equal((await worker.fetch(req, { ...env, PUBLIC_REQUEST_LIMITER: { limit: async () => { throw new Error('private backend failure') } } })).status, 503)
 })

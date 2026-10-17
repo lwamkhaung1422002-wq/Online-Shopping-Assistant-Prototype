@@ -32,6 +32,20 @@ export default {
     headers.set("X-POS-Proxy-Token", env.API_PROXY_SECRET);
     const ip = request.headers.get("CF-Connecting-IP");
     if (!ip) return failure(403, "The API gateway could not identify the client.");
+    if (writable) {
+      // Anonymous customers have no authenticated user ID. A generous per-route
+      // IP ceiling limits bursts while allowing shared mobile-network addresses.
+      // Cloudflare enforces this approximately per edge location, not globally.
+      if (!env.PUBLIC_REQUEST_LIMITER) return failure(503, "The request guard has not been configured.");
+      try {
+        const { success } = await env.PUBLIC_REQUEST_LIMITER.limit({ key: `${path}:${ip}` });
+        if (!success) {
+          const response = failure(429, "Too many requests. Please try again shortly.");
+          response.headers.set("Retry-After", "60");
+          return response;
+        }
+      } catch { return failure(503, "Please try again shortly."); }
+    }
     // Cloudflare supplies this address; intermediary proxy chains cannot replace it.
     headers.set("X-POS-Client-IP", ip);
     headers.set("X-Forwarded-For", ip);
