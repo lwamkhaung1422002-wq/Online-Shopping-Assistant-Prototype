@@ -5,8 +5,9 @@ import { Alert, Box, Button, Chip, CircularProgress, Paper, Stack, TextField, Ty
 import { trackOrder, trackingHash } from '../services/orders.js'
 import { shopId, configured } from '../services/client.js'
 import { money, ORDER_LABELS } from '../../shared/catalog.js'
+import { normalizeTrackingPhone, ordersForPhone, readTrackingHistory } from '../services/tracking-history.js'
 
-function Details({ reference, token, confirmation }) {
+function Details({ reference, token, confirmation, onBack }) {
   const query = useQuery({ queryKey: ['tracking', reference, token], queryFn: () => trackOrder(reference, token), enabled: configured && !!reference && /^[a-f0-9]{64}$/.test(token), refetchInterval: 30000, retry: false })
   const [copied, setCopied] = useState(false)
   if (!configured) return <Alert severity="info">Order tracking is not available yet.</Alert>
@@ -17,6 +18,7 @@ function Details({ reference, token, confirmation }) {
   const link = `${window.location.origin}/track#${trackingHash(reference, token)}`
   async function copy() { try { await navigator.clipboard.writeText(link); setCopied(true) } catch { setCopied(false) } }
   return <Stack spacing={3} sx={{minWidth:0,overflowWrap:'anywhere'}}>
+    {onBack && <Button onClick={onBack} sx={{ alignSelf: 'flex-start' }}>Back to orders</Button>}
     <Typography variant="h1">{confirmation ? 'Order request received' : 'Track your order'}</Typography>
     <Paper variant="outlined" sx={{ p: 3 }}><Stack spacing={2}><Typography variant="h6">{order.reference}</Typography><Chip label={ORDER_LABELS[order.status]} sx={{ alignSelf: 'start' }} color={order.status === 'delivered' ? 'success' : 'default'} />
       {order.status === 'pending' && <Typography color="text.secondary">The shop is reviewing your request. Your order is confirmed when its status changes to Confirmed.</Typography>}
@@ -30,19 +32,40 @@ function Details({ reference, token, confirmation }) {
     <Box><Button onClick={copy} variant="outlined">{copied ? 'Copied' : 'Copy tracking link'}</Button><Button component={Link} to="/">Continue shopping</Button></Box>
   </Stack>
 }
+function SavedOrder({ order, index, onOpen }) {
+  const query = useQuery({ queryKey: ['tracking', order.reference, order.token], queryFn: () => trackOrder(order.reference, order.token), enabled: configured, retry: false })
+  const data = query.data
+  return <Paper variant="outlined" sx={{ p: { xs: 2, sm: 3 } }}><Stack spacing={1.5}>
+    <Typography variant="h6">{data?.items?.map(item => item.name).join(', ') || `Order ${index + 1}`}</Typography>
+    {query.isPending && <Typography color="text.secondary">Loading order…</Typography>}
+    {query.isError && <Alert severity="error">{query.error.message}</Alert>}
+    {data && <><Chip label={ORDER_LABELS[data.status] || data.status} variant="outlined" sx={{ alignSelf: 'flex-start' }} /><Typography>{money(data.total)}</Typography>{data.events?.[0]?.created_at && <Typography variant="body2" color="text.secondary">{new Date(data.events[0].created_at).toLocaleString()}</Typography>}</>}
+    <Button variant="outlined" onClick={() => onOpen(order)} sx={{ alignSelf: 'flex-start' }}>View order {index + 1}</Button>
+  </Stack></Paper>
+}
 export default function TrackingPage({ confirmation = false }) {
   const { hash } = useLocation(); const params = new URLSearchParams(hash.slice(1))
   const reference = params.get('reference') || ''; const token = params.get('token') || ''
-  const [inputReference, setReference] = useState(''); const [inputToken, setToken] = useState(''); const [selected, setSelected] = useState(null)
-  const [recent] = useState(() => { try { const value = JSON.parse(localStorage.getItem(`os-orders:${shopId}`) || '[]'); return Array.isArray(value) ? value.slice(0, 10).filter((o) => typeof o.reference === 'string' && /^[a-f0-9]{64}$/.test(o.token)) : [] } catch { return [] } })
+  const [phone, setPhone] = useState(''); const [searchedPhone, setSearchedPhone] = useState(''); const [selected, setSelected] = useState(null)
+  const [failure, setFailure] = useState('')
+  const [recent] = useState(() => { try { return readTrackingHistory(localStorage, shopId) } catch { return [] } })
   const current = reference && /^[a-f0-9]{64}$/.test(token) ? { reference, token } : selected
-  if (current) return <Details key={current.reference + current.token} {...current} confirmation={confirmation} />
-  return <Stack spacing={3}><Typography variant="h1">Track your order</Typography><Typography color="text.secondary">Open the private link from your order confirmation, or enter your reference and tracking token.</Typography>
-    <Stack component="form" spacing={2} onSubmit={(e) => { e.preventDefault(); setSelected({ reference: inputReference.trim(), token: inputToken.trim() }) }} sx={{ maxWidth: 600 }}>
-      <TextField label="Order reference" value={inputReference} required onChange={(e) => setReference(e.target.value)} />
-      <TextField label="Private tracking token" value={inputToken} required onChange={(e) => setToken(e.target.value)} slotProps={{ htmlInput: { pattern: '[a-f0-9]{64}', maxLength: 64 } }} />
+  if (current) return <Details key={current.reference + current.token} {...current} confirmation={confirmation} onBack={selected ? () => setSelected(null) : undefined} />
+  const matches = ordersForPhone(recent, searchedPhone)
+  const earlier = recent.filter(order => !order.phone)
+  return <Stack spacing={3} sx={{ minWidth: 0 }}><Typography variant="h1">Track your order</Typography>
+    <Typography color="text.secondary">Enter the phone number used at checkout on this browser. On another device, open your private tracking link.</Typography>
+    {!configured && <Alert severity="info">Order tracking is not available yet.</Alert>}
+    <Stack component="form" spacing={2} onSubmit={event => {
+      event.preventDefault()
+      const normalized = normalizeTrackingPhone(phone)
+      if (!/^09\d{7,9}$/.test(normalized)) { setFailure('Enter a valid Myanmar 09 phone number.'); setSearchedPhone(''); return }
+      setFailure(''); setSearchedPhone(normalized)
+    }} sx={{ maxWidth: 600 }}>
+      <TextField label="ဖုန်း / Phone" type="tel" autoComplete="tel" value={phone} required onChange={event => { setPhone(event.target.value); setSearchedPhone(''); setFailure('') }} error={!!failure} helperText={failure || undefined} />
       <Button type="submit" variant="contained">Track order</Button>
     </Stack>
-    {recent.length > 0 && <><Typography variant="h6">Orders on this device</Typography>{recent.map((order) => <Box key={order.reference}><Button component={Link} to={`/track#${trackingHash(order.reference, order.token)}`}>{order.reference}</Button></Box>)}</>}
+    {searchedPhone && (matches.length ? <Stack spacing={2}>{matches.map((order, index) => <SavedOrder key={order.reference} order={order} index={index} onOpen={setSelected} />)}</Stack> : <Alert severity="info">No saved orders match this phone on this browser. Open the private tracking link from your order confirmation or contact the shop.</Alert>)}
+    {earlier.length > 0 && <Box><Typography variant="h6" sx={{ mb: 2 }}>Earlier orders on this browser</Typography><Stack spacing={2}>{earlier.map((order, index) => <SavedOrder key={order.reference} order={order} index={index} onOpen={setSelected} />)}</Stack></Box>}
   </Stack>
 }

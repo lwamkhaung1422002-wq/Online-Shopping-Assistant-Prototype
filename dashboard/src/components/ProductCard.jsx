@@ -41,9 +41,9 @@ export default function ProductCard({ product }) {
             <Typography
               variant="body2"
               sx={{
-                color: 'rgba(255,252,247,0.85)',
-                fontSize: '0.7rem',
-                letterSpacing: '0.2em',
+                color: brand.text,
+                fontSize: '0.875rem',
+                letterSpacing: '0.04em',
                 textTransform: 'uppercase',
                 zIndex: 1,
               }}
@@ -63,7 +63,7 @@ export default function ProductCard({ product }) {
                 zIndex: 1,
                 background: `linear-gradient(135deg, ${brand.gold} 0%, ${brand.goldSoft} 100%)`,
                 color: brand.charcoal,
-                fontWeight: 700,
+                fontWeight: 500,
                 border: 'none',
                 '& .MuiChip-icon': { color: brand.charcoal },
               }}
@@ -71,7 +71,7 @@ export default function ProductCard({ product }) {
           )}
         </Box>
         <CardContent sx={{ py: 2.25, px: 2.5 }}>
-          {product.variants.length > 0 && <Typography sx={{ mb: 1.5 }}>{money(productPrice(product))}<Typography component="span" variant="caption" color="text.secondary" sx={{ ml: 1 }}>{productStock(product) ? 'In stock' : 'Sold out'}</Typography></Typography>}
+          {product.variants.length > 0 && <Typography sx={{ mb: 1.5, fontWeight: 600 }}>{money(productPrice(product))}<Typography component="span" variant="caption" color="text.secondary" sx={{ ml: 1 }}>{productStock(product) ? 'In stock' : 'Sold out'}</Typography></Typography>}
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1 }}>
             <Typography variant="h3" sx={{ mb: 0.5 }}>
               {product.name}
@@ -82,7 +82,7 @@ export default function ProductCard({ product }) {
             {product.description}
           </Typography>
           {colors && (
-            <Typography variant="caption" sx={{ display: 'block', mt: 1.25, color: brand.roseDeep, fontWeight: 700, letterSpacing: '0.04em' }}>
+            <Typography variant="caption" sx={{ display: 'block', mt: 1.25, color: brand.roseDeep, fontWeight: 500 }}>
               Colors: {colors}
             </Typography>
           )}

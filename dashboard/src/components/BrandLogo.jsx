@@ -33,7 +33,7 @@ export default function BrandLogo({ compact = false, to = '/', name = 'Belle Loc
       <Box sx={{ lineHeight: 1.15 }}>
         <Typography
           sx={{
-            fontFamily: '"Cormorant Garamond", Georgia, serif',
+            fontFamily: '"Cormorant Garamond", "Noto Sans Myanmar", Georgia, serif',
             fontWeight: 600,
             fontSize: compact ? '1.15rem' : '1.35rem',
             letterSpacing: '0.02em',
@@ -46,9 +46,9 @@ export default function BrandLogo({ compact = false, to = '/', name = 'Belle Loc
           <Typography
             sx={{
               fontFamily: '"Noto Sans Myanmar", sans-serif',
-              fontSize: '0.65rem',
+              fontSize: '0.875rem',
               fontWeight: 500,
-              letterSpacing: '0.28em',
+              letterSpacing: '0.08em',
               textTransform: 'uppercase',
               color: brand.textMuted,
               mt: 0.25,

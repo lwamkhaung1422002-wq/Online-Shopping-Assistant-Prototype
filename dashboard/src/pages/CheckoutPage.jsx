@@ -6,6 +6,7 @@ import { useCart } from '../services/cart-context.js'
 import { useStore } from '../services/store-context.js'
 import { shopId } from '../services/client.js'
 import { newTrackingToken, submitOrder, trackingHash } from '../services/orders.js'
+import { rememberTrackingOrder } from '../services/tracking-history.js'
 import { available, money } from '../../shared/catalog.js'
 import OrderForm from '../components/OrderForm.jsx'
 import CheckoutVerification from '../components/CheckoutVerification.jsx'
@@ -34,9 +35,7 @@ export default function CheckoutPage() {
       const result = await submitOrder(request, challenge)
       if (!result?.reference || !result?.tracking_token) throw new Error('Order response is incomplete. Retry this request.')
       try {
-        const key = `os-orders:${shopId}`; const previous = JSON.parse(localStorage.getItem(key) || '[]')
-        const recent = Array.isArray(previous) ? previous : []
-        localStorage.setItem(key, JSON.stringify([{ reference: result.reference, token: result.tracking_token }, ...recent.filter((order) => order.reference !== result.reference)].slice(0, 10)))
+        rememberTrackingOrder(localStorage, shopId, result, request.customer.phone)
       } catch { /* The private tracking link remains available on the confirmation screen. */ }
       try { sessionStorage.removeItem(storageKey) } catch { /* Storage may be disabled. */ }
       clear(); await queryClient.invalidateQueries({ queryKey: ['catalog'] })

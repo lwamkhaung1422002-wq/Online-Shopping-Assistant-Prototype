@@ -16,7 +16,7 @@ export default function Layout({ children }) {
     <Box component="header" sx={{ bgcolor: 'background.paper', borderBottom: '1px solid', borderColor: 'divider', position: 'sticky', top: 0, zIndex: 100, py: 1.5 }}>
       <Container maxWidth="lg"><Stack direction="row" sx={{ justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 1 }}>
         <BrandLogo compact name={settings?.store_name || 'Belle Local'} />
-        <Stack component="nav" aria-label="Store navigation" direction="row" spacing={0.5} sx={{ '& .MuiButton-root': { px: { xs: 1.5, sm: 2 }, py: 1, whiteSpace: 'nowrap', flexShrink: 0 } }}><Button component={RouterLink} to="/">Shop</Button><Button component={RouterLink} to="/track">Track order</Button><Button component={RouterLink} to="/cart">Cart ({count})</Button></Stack>
+        <Stack component="nav" aria-label="Store navigation" direction="row" sx={{ flexWrap: 'wrap', gap: .5, minWidth: 0, '& .MuiButton-root': { px: { xs: 1.5, sm: 2 }, py: 1, whiteSpace: 'nowrap', flexShrink: 0 } }}><Button component={RouterLink} to="/">Shop</Button><Button component={RouterLink} to="/track">Track order</Button><Button component={RouterLink} to="/cart">Cart ({count})</Button></Stack>
       </Stack></Container>
     </Box>
     <Container component="main" maxWidth="lg" sx={{ flex: 1, py: { xs: 3, md: 5 } }}>{children}</Container>

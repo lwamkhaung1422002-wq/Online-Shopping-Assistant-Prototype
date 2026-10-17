@@ -14,7 +14,7 @@ export default function CatalogPage() {
   return <Stack spacing={3}>
     {!configured && <Alert severity="info">Store preview · Online ordering is not available yet.</Alert>}
     <Paper variant="outlined" sx={{ p: { xs: 3, md: 5 }, background: gradients.hero }}><Typography variant="overline" color="secondary">{settings?.store_name}</Typography><Typography variant="h1" gutterBottom>{settings?.hero_title || 'Collection'}</Typography><Typography color="text.secondary" sx={{ maxWidth: 660 }}>{settings?.hero_description}</Typography></Paper>
-    <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+    <Stack direction={{ xs: 'column', sm: 'row' }} sx={{ flexWrap: 'wrap', gap: 2 }}>
       <TextField label="Search products" value={search} onChange={(e) => setSearch(e.target.value)} sx={{ flex: 1 }} />
       <TextField select label="Category" value={category} onChange={(e) => setCategory(e.target.value)} sx={{ minWidth: 150 }}><MenuItem value="">All categories</MenuItem>{categories.map((c) => <MenuItem key={c.id} value={c.id}>{c.name}</MenuItem>)}</TextField>
       {!!collections.length && <TextField select label="Collection" value={collection} onChange={(e) => setCollection(e.target.value)} sx={{ minWidth: 150 }}><MenuItem value="">All collections</MenuItem>{collections.map((c) => <MenuItem key={c.id} value={c.id}>{c.name}</MenuItem>)}</TextField>}

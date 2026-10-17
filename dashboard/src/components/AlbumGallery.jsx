@@ -41,7 +41,9 @@ export default function AlbumGallery({ product }) {
               content: '""',
               position: 'absolute',
               inset: 0,
-              background: 'linear-gradient(180deg, transparent 50%, rgba(42,36,50,0.45) 100%)',
+              background: 'linear-gradient(180deg, transparent 35%, rgba(23,23,20,0.86) 100%)',
+              zIndex: 1,
+              pointerEvents: 'none',
             },
           }}
         >
@@ -59,7 +61,7 @@ export default function AlbumGallery({ product }) {
           >
             {item.color ?? product.name}
           </Typography>
-          <Typography variant="body2" sx={{ color: brand.goldSoft, zIndex: 1, letterSpacing: '0.15em', fontSize: '0.75rem' }}>
+          <Typography variant="body2" sx={{ color: brand.cream, zIndex: 1, letterSpacing: '0.02em' }}>
             {item.color ? product.name : `LOOK ${item.id}`}
           </Typography>
         </Box>
