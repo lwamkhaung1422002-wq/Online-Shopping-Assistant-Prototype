@@ -1,9 +1,11 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "belle-local-dashboard",
+  "account_id": "0a7bebdb7c43c1cd951d4affedca0480",
   "main": "cloudflare/worker.js",
   "compatibility_date": "2026-10-17",
-  "workers_dev": false,
+  "workers_dev": true,
+  "preview_urls": false,
   "observability": {
     "enabled": true,
     "logs": {
@@ -26,7 +28,7 @@
     ]
   },
   "vars": {
-    "API_ORIGIN": "https://replace-with-production-api.invalid"
+    "API_ORIGIN": "https://belle-api-production-f913.up.railway.app"
   },
   "env": {
     "staging": {
