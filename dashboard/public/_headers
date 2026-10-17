@@ -1,0 +1,5 @@
+# Cloudflare Static Assets response headers. No changes to app markup/styles.
+/*
+  X-Frame-Options: SAMEORIGIN
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: no-referrer

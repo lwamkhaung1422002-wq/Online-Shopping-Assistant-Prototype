@@ -9,7 +9,12 @@
     "build": "vite build",
     "lint": "oxlint",
     "preview": "vite preview",
-    "dev:main-local": "vite --host 127.0.0.1"
+    "dev:main-local": "vite --host 127.0.0.1",
+    "build:hosting": "node scripts/build-hosting.mjs",
+    "cloudflare:check": "wrangler deploy --env=\"\" --dry-run --outdir .wrangler/check",
+    "cloudflare:deploy": "npm run build:hosting && wrangler deploy --env=\"\"",
+    "cloudflare:deploy:staging": "npm run build:hosting && wrangler deploy --env staging",
+    "test:hosting": "node --test cloudflare/worker.test.js ../tests/imported-media-url.test.mjs"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",
@@ -29,6 +34,12 @@
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.4",
     "oxlint": "^1.75.0",
-    "vite": "^8.2.0"
+    "vite": "^8.2.0",
+    "wrangler": "4.148.0"
+  },
+  "overrides": {
+    "miniflare": {
+      "sharp": "0.35.5"
+    }
   }
 }

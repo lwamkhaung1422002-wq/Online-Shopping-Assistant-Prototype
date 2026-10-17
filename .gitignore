@@ -36,3 +36,7 @@ output/
 
 # Temporary PDF inspection runtime, separate from application dependencies
 /tmp/pdf-verification/
+
+**/.dev.vars
+**/.dev.vars.*
+**/.wrangler/
