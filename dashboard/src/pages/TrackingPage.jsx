@@ -8,7 +8,7 @@ import { money, ORDER_LABELS } from '../../shared/catalog.js'
 import { normalizeTrackingPhone, ordersForPhone, readTrackingHistory } from '../services/tracking-history.js'
 
 function Details({ reference, token, confirmation, onBack }) {
-  const query = useQuery({ queryKey: ['tracking', reference, token], queryFn: () => trackOrder(reference, token), enabled: configured && !!reference && /^[a-f0-9]{64}$/.test(token), refetchInterval: 30000, retry: false })
+  const query = useQuery({ queryKey: ['tracking', reference, token], queryFn: () => trackOrder(reference, token), enabled: configured && !!reference && /^[a-f0-9]{64}$/.test(token), staleTime: 0, refetchInterval: 30000, retry: false })
   const [copied, setCopied] = useState(false)
   if (!configured) return <Alert severity="info">Order tracking is not available yet.</Alert>
   if (!reference || !/^[a-f0-9]{64}$/.test(token)) return <Alert severity="error">Use the complete private tracking link.</Alert>
@@ -33,7 +33,7 @@ function Details({ reference, token, confirmation, onBack }) {
   </Stack>
 }
 function SavedOrder({ order, index, onOpen }) {
-  const query = useQuery({ queryKey: ['tracking', order.reference, order.token], queryFn: () => trackOrder(order.reference, order.token), enabled: configured, retry: false })
+  const query = useQuery({ queryKey: ['tracking', order.reference, order.token], queryFn: () => trackOrder(order.reference, order.token), enabled: configured, staleTime: 0, refetchInterval: 30000, retry: false })
   const data = query.data
   return <Paper variant="outlined" sx={{ p: { xs: 2, sm: 3 } }}><Stack spacing={1.5}>
     <Typography variant="h6">{data?.items?.map(item => item.name).join(', ') || `Order ${index + 1}`}</Typography>
