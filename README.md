@@ -4,7 +4,7 @@ Public dashboard connected to the Belle POS API and local PostgreSQL. Content Ad
 
 ## Run locally
 
-Run `npm run dev` here to launch `dashboard/`. Configure its ignored local environment with the reviewed local API and shop identity. The current review uses Dashboard5186, POS5185 and API4101; revalidate listeners before starting another instance. Historical Firebase launch/seed scripts are not the current setup.
+Run `npm run dev` here to launch `dashboard/`. Configure its ignored local environment with the local API and shop identity. The final local setup uses Dashboard5186, POS5173 and API3108, connected to PostgreSQL `belle_local_main`. Historical Firebase launch/seed scripts and the old disposable4101/5185runtime are not the current setup.
 
 The command prints its Local URL and opens Chrome automatically. If this application's frontend is already running, it reuses it and opens its URL rather than launching a conflicting duplicate. An unrelated service occupying the same port is reported without stopping it. Frontend startup remains available even when the API is temporarily unavailable.
 
@@ -26,9 +26,9 @@ Toolchain configs and package lockfiles remain at their expected root. [Structur
 
 ## Current state and data
 
-Original Firebase data is preserved in private verified backups outside Git. The local PostgreSQL review and final local cutover are separate stages. Original catalogue pictures and size guides are retained. Phone tracking, Dashboard typography, new-media upload and browser acceptance are covered by the current POS goal; final cutover remains incomplete. No hosting deployment is authorized.
+Original Firebase data is preserved in private verified backups outside Git. Final local PostgreSQL cutover,85table backup/restore verification and normal local API/auth/catalogue reads have passed. Original24catalogue pictures and4size guides are retained. Actual disposable browser acceptance covered private phone tracking, typography/200%zoom, order/customer workflows and Cloudinary upload/unlink. A fresh post-cutover browser smoke was unavailable at the tool layer; it is not claimed as a new browser pass. No hosting deployment is authorized.
 
-Read [scope](docs/GOAL.md), [progress](docs/PROGRESS.md), [workflow checklist](docs/WORKFLOW-CHECKLIST.md) and [completion audit](docs/LOCAL-COMPLETION-AUDIT.md). Production deployment is deferred.
+Read the [current local checkpoint](docs/LOCAL-POSTGRES-CHECKPOINT-2026-10-17.md) and the final local reports in the sibling Belle POS repository. Production deployment is deferred. The newly requested social-media-style post composer, per-post size guides and full image viewer are discussion only and have not been implemented yet.
 
 ## Checks
 
