@@ -1,24 +1,41 @@
 import { useState } from 'react'
 import { Link } from 'react-router'
-import { Alert, Box, Button, CircularProgress, Paper, Stack, TextField, Typography } from '@mui/material'
+import { Alert, Box, Button, CircularProgress, IconButton, Stack, TextField, Typography } from '@mui/material'
+import CloseRoundedIcon from '@mui/icons-material/CloseRounded'
+import AddRoundedIcon from '@mui/icons-material/AddRounded'
+import RemoveRoundedIcon from '@mui/icons-material/RemoveRounded'
+import ShoppingBagOutlinedIcon from '@mui/icons-material/ShoppingBagOutlined'
 import { useCart } from '../services/cart-context.js'
 import { useStore } from '../services/store-context.js'
+import { useStorefrontUi } from '../services/storefront-ui.js'
 import { available, money } from '../../shared/catalog.js'
-import {cartKey} from '../../shared/recipe.js'
-
-export default function CartPage() {
-  const { lines, update, remove } = useCart(); const { loading, error } = useStore(); const [message, setMessage] = useState('')
+import { cartKey } from '../../shared/recipe.js'
+export default function CartPage({ embedded = false, onClose }) {
+  const { lines, update, remove, count } = useCart(), { loading, error } = useStore(), { overlayState } = useStorefrontUi()
+  const [message, setMessage] = useState('')
   if (loading) return <CircularProgress aria-label="Loading cart" />
   if (error) return <Alert severity="error">Unable to refresh stock. Please try again.</Alert>
-  const invalid = lines.some((line) => !line.variant || !line.selection.valid || line.stock_loading || line.quantity > available(line.variant))
-  const subtotal = lines.reduce((sum, line) => sum + (line.variant ? line.selected_price * line.quantity : 0), 0)
-  return <Stack spacing={3}><Typography variant="h1">Your cart</Typography>{message && <Alert severity="error">{message}</Alert>}
-    {lines.map((line) => <Paper key={cartKey(line)} variant="outlined" sx={{ p: 3 }}><Stack direction={{ xs: 'column', sm: 'row' }} sx={{ justifyContent: "space-between", gap: 2 }}>
-      <Box><Typography variant="h6">{line.product?.name || 'Unavailable product'}</Typography>{line.variant && <Typography color="text.secondary">{line.variant.color} / {line.variant.size} · {money(line.selected_price)} · {line.stock_loading?'Checking stock':`${available(line.variant)} available`}</Typography>}{line.selection.options.map(option=><Typography key={option.id} variant="body2">{option.group_name}: {option.name}</Typography>)}{(!line.variant || !line.selection.valid || line.quantity > available(line.variant)) && <Typography color="error">This selection is no longer available. Update or remove the item.</Typography>}{line.stock_error&&<Typography color="error">{line.stock_error}</Typography>}</Box>
-      <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}><TextField label="Quantity" type="number" value={line.quantity} sx={{ width: 100 }} slotProps={{ htmlInput: { min: 1, max: line.variant ? Math.min(100, available(line.variant)) : 1 } }} onChange={(e) => { try { update(cartKey(line), Number(e.target.value)); setMessage('') } catch (error) { setMessage(error.message) } }} /><Button color="error" onClick={() => remove(cartKey(line))}>Remove</Button></Stack>
-    </Stack></Paper>)}
-    {!lines.length && <Typography>Your cart is empty.</Typography>}
-    {!!lines.length && <><Typography variant="h6">Subtotal: {money(subtotal)}</Typography><Typography variant="body2" color="text.secondary">Delivery fee is shown at checkout.</Typography><Box><Button component={Link} to="/checkout" variant="contained" disabled={invalid}>Checkout</Button></Box></>}
-    <Box><Button component={Link} to="/">Continue shopping</Button></Box>
+  const invalid = lines.some(line => !line.variant || !line.selection.valid || line.stock_loading || line.quantity > available(line.variant))
+  const subtotal = lines.reduce((sum,line) => sum + (line.variant ? line.selected_price * line.quantity : 0),0)
+  const change = (line,value) => { try { update(cartKey(line),Number(value)); setMessage('') } catch(error) { setMessage(error.message) } }
+  return <Stack sx={{ height: embedded ? '100%' : undefined, minHeight: 0, maxWidth: embedded ? undefined : 760, mx: embedded ? undefined : 'auto' }}>
+    <Stack direction="row" sx={{ alignItems: 'center', justifyContent: 'space-between', minHeight: { xs: 65, md: 82 }, px: { xs: 2.25, md: 3.25 }, borderBottom: '1px solid', borderColor: 'divider' }}><Typography component="h1" sx={{ fontFamily: 'Georgia,serif', fontSize: 27, fontWeight: 400 }}>Your bag <Box component="span" sx={{ fontFamily: 'system-ui', fontSize: 14, color: '#999' }}>({count})</Box></Typography>{onClose && <IconButton aria-label="Close cart" onClick={onClose}><CloseRoundedIcon /></IconButton>}</Stack>
+    <Box sx={{ flex: 1, minHeight: 0, overflowY: 'auto', p: { xs: 2.5, md: '25px' } }}>
+      {message && <Alert severity="error" sx={{ mb: 2 }}>{message}</Alert>}
+      {lines.map(line => {
+        const image = line.product?.images?.find(image => image.color === line.variant?.color) || line.product?.images?.find(image => image.is_cover) || line.product?.images?.[0]
+        return <Box key={cartKey(line)} sx={{ display: 'grid', gridTemplateColumns: '79px minmax(0,1fr)', gap: '15px', borderBottom: '1px solid', borderColor: 'divider', pb: 2.5, mb: 2.5 }}>
+          {image?.src ? <Box component="img" src={image.src} alt={line.product?.name} sx={{ width: 79, height: 105, objectFit: 'cover' }} /> : <Box sx={{ width: 79, height: 105, bgcolor: '#f0ece7' }} />}
+          <Box sx={{ minWidth: 0 }}><Typography component="h2" sx={{ fontFamily: 'Georgia,serif', fontSize: 16, fontWeight: 400, mb: .75 }}>{line.product?.name || 'Unavailable product'}</Typography>{line.variant && <><Typography sx={{ fontSize: 11, color: 'text.secondary' }}>{line.variant.color} / {line.variant.size}</Typography><Typography sx={{ fontSize: 12, fontWeight: 650, mt: .5 }}>{money(line.selected_price)}</Typography></>}
+            {line.selection.options.map(option => <Typography key={option.id} sx={{ fontSize: 11, color: 'text.secondary' }}>{option.group_name}: {option.name}</Typography>)}
+            {(!line.variant || !line.selection.valid || line.quantity > available(line.variant)) && <Typography color="error" sx={{ fontSize: 12 }}>This selection is no longer available. Update or remove the item.</Typography>}
+            {line.stock_loading && <Typography sx={{ fontSize: 11 }}>Checking stock…</Typography>}{line.stock_error && <Typography color="error" sx={{ fontSize: 12 }}>{line.stock_error}</Typography>}
+            <Stack direction="row" spacing={.75} sx={{ alignItems: 'center', mt: 1.25 }}><IconButton aria-label={'Decrease ' + line.product?.name} disabled={line.quantity <= 1} onClick={() => change(line,line.quantity-1)} sx={{ minWidth: 28, minHeight: 28, width: 28, height: 28, border: '1px solid', borderColor: 'divider', borderRadius: 0 }}><RemoveRoundedIcon sx={{ fontSize: 14 }} /></IconButton><TextField type="number" value={line.quantity} variant="standard" onChange={event => change(line,event.target.value)} slotProps={{ htmlInput: { 'aria-label': 'Quantity for ' + line.product?.name, min: 1, max: line.variant ? Math.min(100,available(line.variant)) : 1, style: { textAlign: 'center', padding: 0 } }, input: { disableUnderline: true } }} sx={{ width: 28, '& input::-webkit-inner-spin-button': { WebkitAppearance: 'none' } }} /><IconButton aria-label={'Increase ' + line.product?.name} disabled={!line.variant || line.stock_loading || line.quantity >= Math.min(100,available(line.variant))} onClick={() => change(line,line.quantity+1)} sx={{ minWidth: 28, minHeight: 28, width: 28, height: 28, border: '1px solid', borderColor: 'divider', borderRadius: 0 }}><AddRoundedIcon sx={{ fontSize: 14 }} /></IconButton><Button onClick={() => remove(cartKey(line))} sx={{ ml: 'auto!important', minWidth: 0, minHeight: 28, p: .25, fontSize: 11, color: '#957d76', textDecoration: 'underline' }}>Remove</Button></Stack>
+          </Box>
+        </Box>
+      })}
+      {!lines.length && <Box sx={{ textAlign: 'center', py: 7 }}><ShoppingBagOutlinedIcon sx={{ fontSize: 48, color: '#b5aca5' }} /><Typography variant="h2" sx={{ fontSize: 25, my: 2 }}>Your bag is empty</Typography><Button component={Link} to="/" variant="outlined">Continue shopping</Button></Box>}
+    </Box>
+    {!!lines.length && <Box sx={{ borderTop: '1px solid', borderColor: 'divider', p: { xs: 2.5, md: '22px 25px 30px' } }}><Stack direction="row" sx={{ justifyContent: 'space-between', mb: 2 }}><Typography sx={{ fontWeight: 650 }}>Subtotal</Typography><Typography sx={{ fontWeight: 650 }}>{money(subtotal)}</Typography></Stack><Button component={Link} to="/checkout" state={overlayState} variant="contained" fullWidth disabled={invalid} sx={{ fontSize: 12, fontWeight: 750, letterSpacing: '.04em' }}>CHECKOUT</Button></Box>}
   </Stack>
 }

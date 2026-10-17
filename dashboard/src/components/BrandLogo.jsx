@@ -1,65 +1,10 @@
 import { Box, Typography } from '@mui/material'
 import { Link as RouterLink } from 'react-router'
-import { brand } from '../theme/palette.js'
-
-function LogoMark({ size = 64 }) {
-  return (
-    <Box
-      component="img"
-      src={`${import.meta.env.BASE_URL}brand/belle-local-logo.png`}
-      alt=""
-      width={size}
-      height={size}
-      aria-hidden
-      sx={{ flexShrink: 0, display: 'block', objectFit: 'contain', aspectRatio: '1 / 1' }}
-    />
-  )
+export function LogoMark({ size = 44 }) {
+  return <Box component="img" src={import.meta.env.BASE_URL + 'brand/belle-local-logo.png'} alt="" aria-hidden sx={{ width: size, height: size, objectFit: 'contain', flexShrink: 0, bgcolor: '#24201f', borderRadius: '2px' }} />
 }
-
-export default function BrandLogo({ compact = false, to = '/', name = 'Belle Local' }) {
-  return (
-    <Box
-      component={RouterLink}
-      to={to}
-      sx={{
-        display: 'inline-flex',
-        alignItems: 'center',
-        gap: compact ? 1 : 1.25,
-        textDecoration: 'none',
-        color: 'inherit',
-      }}
-    >
-      <LogoMark size={compact ? 64 : 80} />
-      <Box sx={{ lineHeight: 1.15 }}>
-        <Typography
-          sx={{
-            fontFamily: '"Cormorant Garamond", "Noto Sans Myanmar", Georgia, serif',
-            fontWeight: 600,
-            fontSize: compact ? '1.15rem' : '1.35rem',
-            letterSpacing: '0.02em',
-            color: brand.text,
-          }}
-        >
-          {name}
-        </Typography>
-        {!compact && (
-          <Typography
-            sx={{
-              fontFamily: '"Noto Sans Myanmar", sans-serif',
-              fontSize: '0.875rem',
-              fontWeight: 500,
-              letterSpacing: '0.08em',
-              textTransform: 'uppercase',
-              color: brand.textMuted,
-              mt: 0.25,
-            }}
-          >
-            Clothing
-          </Typography>
-        )}
-      </Box>
-    </Box>
-  )
+export default function BrandLogo({ compact = false, to = '/', name = 'Belle Local Clothing' }) {
+  return <Box component={RouterLink} to={to} aria-label={name + ' home'} sx={{ display: 'inline-flex', alignItems: 'center', gap: { xs: 1, md: 1.4 }, textDecoration: 'none', flexShrink: 0, minWidth: 0 }}>
+    <LogoMark size={compact ? { xs: 34, md: 44 } : 48} /><Typography component="span" sx={{ fontFamily: 'Georgia,"Times New Roman",serif', fontSize: { xs: 'clamp(15px,4.35vw,20px)', md: 24 }, lineHeight: 1.2, fontWeight: 400, letterSpacing: '.008em', whiteSpace: 'nowrap' }}>{name}</Typography>
+  </Box>
 }
-
-export { LogoMark }

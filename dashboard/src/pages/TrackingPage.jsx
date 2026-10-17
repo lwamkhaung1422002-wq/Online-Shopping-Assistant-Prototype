@@ -21,13 +21,11 @@ function Details({ reference, token, confirmation, onBack }) {
     {onBack && <Button onClick={onBack} sx={{ alignSelf: 'flex-start' }}>Back to orders</Button>}
     <Typography variant="h1">{confirmation ? 'Order request received' : 'Track your order'}</Typography>
     <Paper variant="outlined" sx={{ p: 3 }}><Stack spacing={2}><Typography variant="h6">{order.reference}</Typography><Chip label={ORDER_LABELS[order.status]} sx={{ alignSelf: 'start' }} color={order.status === 'delivered' ? 'success' : 'default'} />
-      {order.status === 'pending' && <Typography color="text.secondary">The shop is reviewing your request. Your order is confirmed when its status changes to Confirmed.</Typography>}
       {order.items.map((item, i) => <Box key={i}><Typography>{item.name} · {item.color} / {item.size} × {item.quantity} · {money(Math.max(0,item.unit_price * item.quantity))}</Typography>{item.modifiers?.map((modifier,index)=><Typography key={index} variant="body2" color="text.secondary">{modifier.group_name}: {modifier.name}</Typography>)}</Box>)}
       <Typography>Delivery: {money(order.delivery_fee)}</Typography><Typography sx={{ fontWeight: 700 }}>Total: {money(order.total)}</Typography>
       {order.courier && <Typography>Courier: {order.courier} {order.delivery_reference && `· ${order.delivery_reference}`}</Typography>}
       <Stack spacing={1} sx={{ pt: 1 }}>{order.events.map((event, i) => <Typography variant="body2" key={i}>{ORDER_LABELS[event.status]} · {new Date(event.created_at).toLocaleString()}</Typography>)}</Stack>
     </Stack></Paper>
-    <Typography variant="body2" color="text.secondary">Keep your private tracking link. Anyone with this link can view this order's status.</Typography>
     <TextField label="Private tracking link" value={link} slotProps={{ input: { readOnly: true } }} onFocus={(e) => e.target.select()} />
     <Box><Button onClick={copy} variant="outlined">{copied ? 'Copied' : 'Copy tracking link'}</Button><Button component={Link} to="/">Continue shopping</Button></Box>
   </Stack>
@@ -54,7 +52,6 @@ export default function TrackingPage({ confirmation = false }) {
   const matches = ordersForPhone(recent, searchedPhone)
   const earlier = recent.filter(order => !order.phone)
   return <Stack spacing={3} sx={{ minWidth: 0 }}><Typography variant="h1">Track your order</Typography>
-    <Typography color="text.secondary">Enter the phone number used at checkout on this browser. On another device, open your private tracking link.</Typography>
     {!configured && <Alert severity="info">Order tracking is not available yet.</Alert>}
     <Stack component="form" spacing={2} onSubmit={event => {
       event.preventDefault()

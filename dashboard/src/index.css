@@ -1,6 +1,7 @@
 *, *::before, *::after { box-sizing: border-box; }
 html { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
-body { margin: 0; font-family: 'Noto Sans Myanmar', 'Roboto', sans-serif; font-size: 16px; line-height: 1.75; font-weight: 400; background: #FCF8F5; color: #292622; }
+body { margin: 0; font-family: system-ui, -apple-system, 'Segoe UI', Arial, 'Noto Sans Myanmar', sans-serif; background: #fff; color: #24201f; }
 #root { min-height: 100vh; }
-::selection { background: rgba(200,149,126,0.25); }
+::selection { background: #ece4dd; }
 a { color: inherit; }
+@media(prefers-reduced-motion:reduce) { *,*::before,*::after { scroll-behavior:auto!important; transition:none!important; animation:none!important; } }

@@ -13,7 +13,7 @@ import CheckoutVerification from '../components/CheckoutVerification.jsx'
 
 const storageKey = `os-checkout:${shopId}`
 function readPending() { try { const value = JSON.parse(sessionStorage.getItem(storageKey)); return value?.request_key && value?.tracking_token && value?.customer && Array.isArray(value?.items) ? value : null } catch { return null } }
-export default function CheckoutPage() {
+export default function CheckoutPage({ embedded = false }) {
   const navigate = useNavigate(); const queryClient = useQueryClient(); const { cart, lines, clear } = useCart(); const { settings, configured, loading, error: storeError } = useStore()
   const [pending, setPending] = useState(readPending); const [busy, setBusy] = useState(false); const [error, setError] = useState(''); const [challenge, setChallenge] = useState(''); const [attempt, setAttempt] = useState(0)
   if (loading) return <CircularProgress aria-label="Loading checkout" />
@@ -39,7 +39,7 @@ export default function CheckoutPage() {
       } catch { /* The private tracking link remains available on the confirmation screen. */ }
       try { sessionStorage.removeItem(storageKey) } catch { /* Storage may be disabled. */ }
       clear(); await queryClient.invalidateQueries({ queryKey: ['catalog'] })
-      navigate(`/order/success#${trackingHash(result.reference, result.tracking_token)}`, { replace: true })
+      navigate(`/order/success#${trackingHash(result.reference, result.tracking_token)}`, { replace: true, ...(embedded ? { state: { backgroundLocation: { pathname: '/' } } } : {}) })
     } catch (error) {
       setError(error.message); setChallenge(''); setAttempt((value) => value + 1)
       // Only a known new-order rollback lets the shopper change the submitted cart.
@@ -49,11 +49,16 @@ export default function CheckoutPage() {
     finally { setBusy(false) }
   }
   if (!cart.length && !pending) return <Box><Typography>Your cart is empty.</Typography><Button component={Link} to="/">Browse collection</Button></Box>
-  return <Stack spacing={3}><Typography variant="h1">Checkout</Typography>{error && <Alert severity="error">{error}</Alert>}
-    {pending && <Alert severity="info">This order request is saved for retry. Keep using this request if the connection was interrupted.</Alert>}
-    <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1.2fr 0.8fr' }, gap: 3 }}>
-      <Paper variant="outlined" sx={{ p: 3 }}><Stack spacing={2}><OrderForm key={pending?.request_key || 'new'} defaults={pending ? { ...pending.customer, note: pending.note } : undefined} locked={!!pending} busy={busy || (!pending && invalid)} onSubmit={place} /><CheckoutVerification onToken={setChallenge} resetKey={attempt} /></Stack></Paper>
-      <Paper variant="outlined" sx={{ p: 3, alignSelf: 'start' }}><Stack spacing={2}>{summary.map((item,index) => <Box key={index}><Typography>{item.name} · {item.color} / {item.size} × {item.quantity}</Typography>{item.modifiers?.length>0&&<Typography variant="body2" color="text.secondary">{item.modifiers.join(', ')}</Typography>}</Box>)}{subtotal !== null && <><Typography>Subtotal: {money(subtotal)}</Typography><Typography>Delivery: {money(deliveryFee)}</Typography><Typography variant="h6">Estimated total: {money(subtotal + deliveryFee)}</Typography></>}<Typography variant="body2" color="text.secondary">The final price is checked when your request is processed. The shop will confirm your order after reviewing it.</Typography>{!pending && <Button component={Link} to="/cart">Edit cart</Button>}</Stack></Paper>
-    </Box>
+  return <Stack spacing={2.5} sx={{ maxWidth: embedded ? undefined : 560, mx: embedded ? undefined : 'auto' }}>
+    <Typography variant="h1" sx={{ fontSize: 31, pr: 3 }}>Delivery details</Typography>{error && <Alert severity="error">{error}</Alert>}
+    {pending && <Alert severity="info">Saved request · Retry this order</Alert>}
+    <OrderForm key={pending?.request_key || 'new'} defaults={pending ? { ...pending.customer, note: pending.note } : undefined} locked={!!pending} busy={busy || (!pending && invalid)} onSubmit={place}>
+    <CheckoutVerification onToken={setChallenge} resetKey={attempt} />
+    <Paper variant="outlined" sx={{ p: 2, bgcolor: '#f6f1ed', border: 0 }}><Stack spacing={1}>
+      {summary.map((item,index) => <Box key={index}><Typography sx={{ fontSize: 12 }}>{item.name} · {item.color} / {item.size} × {item.quantity}</Typography>{item.modifiers?.length>0 && <Typography sx={{ fontSize: 11, color: 'text.secondary' }}>{item.modifiers.join(', ')}</Typography>}</Box>)}
+      {subtotal !== null && <><Typography sx={{ fontSize: 12 }}>Subtotal: {money(subtotal)}</Typography><Typography sx={{ fontSize: 12 }}>Delivery: {money(deliveryFee)}</Typography><Typography sx={{ fontSize: 13, fontWeight: 650 }}>Order total: {money(subtotal + deliveryFee)}</Typography></>}
+      {!pending && <Button component={Link} to="/cart" state={embedded ? { backgroundLocation: { pathname: '/' } } : undefined} sx={{ alignSelf: 'start', p: 0, minHeight: 32, fontSize: 12 }}>Edit cart</Button>}
+    </Stack></Paper>
+    </OrderForm>
   </Stack>
 }
