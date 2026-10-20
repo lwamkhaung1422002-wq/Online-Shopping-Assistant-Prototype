@@ -1,3 +1,4 @@
+import { useStoreLanguage } from '../services/language.js'
 import { useEffect, useRef, useState } from 'react'
 import { Alert, Box } from '@mui/material'
 
@@ -13,6 +14,7 @@ function loadScript() {
   return scriptPromise
 }
 export default function CheckoutVerification({ onToken, resetKey }) {
+  const { t } = useStoreLanguage()
   const container = useRef(null); const callback = useRef(onToken); const [error, setError] = useState('')
   useEffect(() => { callback.current = onToken }, [onToken])
   const siteKey = import.meta.env.VITE_TURNSTILE_SITE_KEY
@@ -28,5 +30,5 @@ export default function CheckoutVerification({ onToken, resetKey }) {
     }).catch((error) => { if (alive) setError(error.message) })
     return () => { alive = false; if (widget != null) window.turnstile?.remove(widget) }
   }, [siteKey, resetKey])
-  return <Box>{error && <Alert severity="error">{error}</Alert>}<Box ref={container} /></Box>
+  return <Box>{error && <Alert severity="error">{t(error)}</Alert>}<Box ref={container} /></Box>
 }

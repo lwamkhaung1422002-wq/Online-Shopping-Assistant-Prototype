@@ -1,4 +1,8 @@
 *, *::before, *::after { box-sizing: border-box; }
+@font-face { font-family: 'Noto Sans Myanmar'; font-style: normal; font-weight: 400; font-display: swap; src: url('/brand/fonts/noto-sans-myanmar-400.woff2') format('woff2'); }
+@font-face { font-family: 'Noto Sans Myanmar'; font-style: normal; font-weight: 700; font-display: swap; src: url('/brand/fonts/noto-sans-myanmar-700.woff2') format('woff2'); }
+html[lang='my'] .MuiTypography-root, html[lang='my'] .MuiButton-root, html[lang='my'] .MuiChip-label, html[lang='my'] .MuiInputLabel-root, html[lang='my'] .MuiTableCell-root { line-height: 1.8; letter-spacing: normal; }
+html[lang='my'] .MuiButton-root { font-size: 13px; }
 html { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
 body { margin: 0; font-family: system-ui, -apple-system, 'Segoe UI', Arial, 'Noto Sans Myanmar', sans-serif; background: #fff; color: #24201f; }
 #root { min-height: 100vh; }
