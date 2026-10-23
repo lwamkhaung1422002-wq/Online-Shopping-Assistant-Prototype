@@ -6,6 +6,9 @@
   "compatibility_date": "2026-10-17",
   "workers_dev": true,
   "preview_urls": false,
+  "routes": [
+    { "pattern": "bellelocalclothing.store", "custom_domain": true }
+  ],
   "ratelimits": [
     { "name": "PUBLIC_REQUEST_LIMITER", "namespace_id": "2026101801", "simple": { "limit": 120, "period": 60 } }
   ],
